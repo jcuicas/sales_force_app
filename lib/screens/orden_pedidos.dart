@@ -1,4 +1,8 @@
+import 'package:app_force_sales/providers/obtener_datos_productos.dart';
+import 'package:app_force_sales/providers_off/obtener_datos_productos_off.dart';
 import 'package:flutter/material.dart';
+import 'package:app_force_sales/models/productos.dart';
+import 'package:app_force_sales/storage/product_storage.dart';
 import 'package:app_force_sales/models/cliente.dart';
 import 'package:app_force_sales/storage/client_storage.dart';
 import 'package:app_force_sales/components/my_appbar.dart';
@@ -21,16 +25,21 @@ class _OrdenPedidoState extends State<OrdenPedido> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   Future<List<Cliente>>? listaClientes;
+  Future<List<Producto>>? listaProductos;
 
   final clientStorage = ClientStorage();
+  final productsStorage = ProductStorage();
 
   String? selectedValueClient;
+  String? selectedValueProduct;
 
   final textEditingControllerClient = TextEditingController();
+  final textEditingControllerProduct = TextEditingController();
 
   @override
   void dispose() {
     textEditingControllerClient.dispose();
+    textEditingControllerProduct.dispose();
 
     super.dispose();
   }
@@ -39,8 +48,10 @@ class _OrdenPedidoState extends State<OrdenPedido> {
   Widget build(BuildContext context) {
     if (GetInfoUser.of(context).conexion!) {
       listaClientes = obtenerClientes(GetInfoUser.of(context).accessToken.toString());
+      listaProductos = obtenerProductos(GetInfoUser.of(context).accessToken.toString());
     } else {
       listaClientes = obtenerClientesLocal();
+      listaProductos = obtenerProductosLocal();
     }
 
     return Scaffold(
@@ -167,6 +178,105 @@ class _OrdenPedidoState extends State<OrdenPedido> {
               } else if (snapshot.hasError) {
                 return const Center(
                   child: Text('No hay datos de clientes...'),
+                );
+              }
+
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            },
+          ),
+
+          /* PRODUCTOS */
+          FutureBuilder(
+            future: listaProductos,
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                return Container(
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton2<String>(
+                      isExpanded: true,
+                      hint: Text(
+                        'Seleccionar producto',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Theme.of(context).hintColor,
+                        ),
+                      ),
+                      items: snapshot.data! //items
+                          .map((item) => DropdownMenuItem(
+                                value: '${item.title} - ${item.id}',
+                                child: Text(
+                                  item.title,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                      value: selectedValueProduct,
+                      onChanged: (value) {
+                        setState(() {
+                          selectedValueProduct = value;
+                        });
+                      },
+                      buttonStyleData: const ButtonStyleData(
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        height: 40,
+                        width: 200,
+                      ),
+                      dropdownStyleData: const DropdownStyleData(
+                        maxHeight: 200,
+                      ),
+                      menuItemStyleData: const MenuItemStyleData(
+                        height: 40,
+                      ),
+                      dropdownSearchData: DropdownSearchData(
+                        searchController: textEditingControllerProduct,
+                        searchInnerWidgetHeight: 50,
+                        searchInnerWidget: Container(
+                          height: 50,
+                          padding: const EdgeInsets.only(
+                            top: 8,
+                            bottom: 4,
+                            right: 8,
+                            left: 8,
+                          ),
+                          child: TextFormField(
+                            textCapitalization: TextCapitalization.words,
+                            expands: true,
+                            maxLines: null,
+                            controller: textEditingControllerProduct,
+                            decoration: InputDecoration(
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8,
+                              ),
+                              hintText: 'Buscar un producto...',
+                              hintStyle: const TextStyle(fontSize: 12),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+                        searchMatchFn: (item, searchValue) {
+                          return item.value.toString().contains(searchValue);
+                        },
+                      ),
+                      //This to clear the search value when you close the menu
+                      onMenuStateChange: (isOpen) {
+                        if (!isOpen) {
+                          textEditingControllerProduct.clear();
+                        }
+                      },
+                    ),
+                  ),
+                );
+              } else if (snapshot.hasError) {
+                return const Center(
+                  child: Text('No hay datos de productos...'),
                 );
               }
 

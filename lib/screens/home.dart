@@ -70,8 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-
-    bool conexion = _connectionStatus[0].toString() == ConnectivityResult.wifi.toString();
+    bool conexion = _connectionStatus[0].toString() ==
+            ConnectivityResult.wifi.toString() ||
+        _connectionStatus[0].toString() == ConnectivityResult.mobile.toString();
 
     GetInfoUser.of(context).setConexion(conexion);
     GetInfoUser.of(context).setAppTitle(widget.titulo);
